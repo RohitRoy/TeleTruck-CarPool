@@ -31,8 +31,7 @@ class Sender(spade.Agent.Agent):
             msg.setPerformative("inform")
             msg.addReceiver(spade.AID.aid("b@"+host,["xmpp://b@"+host]))
             msg.setContent("testSendMsg")
-            msg.setOntology('sssssssssssssssssssssssssssssssssssssssssssssss')
-  
+=  
             self.myAgent.send(msg)
   
             print "a has sent a message:"
@@ -47,7 +46,6 @@ class Receiver(spade.Agent.Agent):
             msg = self._receive(block=True,timeout=10)
             print "b has received a message:"
             print str(msg)
-            msg.setOntology('rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr')
   
     def _setup(self):
         template = spade.Behaviour.ACLTemplate()
