@@ -109,26 +109,33 @@ class PnEU(spade.Agent.Agent):
 
     class VehicleMotion(spade.Behaviour.PeriodicBehaviour):
 
+        def onStart(self):
+            self.traversed = 0.0
+
         def _onTick(self):
             myAgent = self.getAgent()
             if myAgent.path and len(myAgent.path) > 1:
                 i = myAgent.path.index(myAgent.location)
                 nextstop = myAgent.path[1]
-                self.traversed += self.speed
+
+                self.traversed += myAgent.speed
                 distance = G[myAgent.location][nextstop] - self.traversed
+                print myAgent.getName(), distance
                 if distance < 0.0:
                     myAgent.path = myAgent.path[1:]
+                    myAgent.location = myAgent.path[0]
+                    self.traversed = 0.0
 
-                    # have picked up all the orders on arriving at nextstop
-                    if len(myAgent.topick[nextstop]):
-                        for taskid, delivery in myAgent.topick[nextstop]:
-                            myAgent.picked[delivery].append(taskid)
+                    # # have picked up all the orders on arriving at nextstop
+                    # if len(myAgent.topick[nextstop]):
+                    #     for taskid, delivery in myAgent.topick[nextstop]:
+                    #         myAgent.picked[delivery].append(taskid)
 
-                    # striking out all the orders delivered at nextstop
-                    if len(myAgent.picked[nextstop]):
-                        for taskid in myAgent.picked[nextstop]:
-                            print myAgent.getName(), " has completed task ", taskid
-                        myAgent.picked[nextstop] = list()
+                    # # striking out all the orders delivered at nextstop
+                    # if len(myAgent.picked[nextstop]):
+                    #     for taskid in myAgent.picked[nextstop]:
+                    #         print myAgent.getName(), " has completed task ", taskid
+                    #     myAgent.picked[nextstop] = list()
 
 
     class RunTradeRound(spade.Behaviour.Behaviour):
@@ -153,8 +160,8 @@ class PnEU(spade.Agent.Agent):
         self.path, self.tour = updatedPath(getMeshPath(self.path), self.tour, task)
         print self.getName(), "New Path: ", self.path
         print self.getName(), "New Tour: ", self.tour
-        print self.getName(), "Position: ", self.tour
-        self.topick[task[0]] = (jobid, task[1])
+        print self.getName(), "Position: ", self.path[0], G[self.path[0]][self.path[1]]
+        self.topick[task[0]].append((jobid, task[1]))
 
 
     def _setup(self):
