@@ -108,8 +108,8 @@ class WebAdminHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         # Switch page
         #The CSS file
         if page.endswith("css") or page.endswith("js"):
-                #self.copyfile(urllib.urlopen(self.path), self.wfile)
-                try:
+            #self.copyfile(urllib.urlopen(self.path), self.wfile)
+            try:
                 f = open(page[1:], "r")
                 self.copyfile(f, self.wfile)
                 f.close()
@@ -332,7 +332,7 @@ class Auctioner(Agent.Agent):
   
   
     class WebAdminBehav(Behaviour.Behaviour):
-        WEB_ADMIN_PORT = 8010
+        WEB_ADMIN_PORT = 8008
   
         def onStart(self):
             self.httpd = None
@@ -389,7 +389,7 @@ if __name__ == "__main__":
     try:
         b.start()
     except Exception, e:
-    print "EXCEPTION: ", str(e)
+        print "EXCEPTION: ", str(e)
   
     while True:
         time.sleep(1)

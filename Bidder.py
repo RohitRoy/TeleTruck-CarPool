@@ -587,7 +587,7 @@ class Bidder(Agent.Agent):
   
   
     class WebAdminBehav(Behaviour.Behaviour):
-        #WEB_ADMIN_PORT = 8009
+        #WEB_ADMIN_PORT = 8008
   
         def onStart(self):
             self.httpd = None
@@ -595,7 +595,7 @@ class Bidder(Agent.Agent):
                 try:
                     self.WEB_ADMIN_PORT = int(self.myAgent.WEB_ADMIN_PORT)
                 except:
-                    self.WEB_ADMIN_PORT = 8009
+                    self.WEB_ADMIN_PORT = 8008
                 try:
                     self.httpd = SocketServer.ThreadingTCPServer(('', self.WEB_ADMIN_PORT), WebAdminHandler)
   
@@ -698,7 +698,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         b.WEB_ADMIN_PORT = sys.argv[1]
     else:
-        b.WEB_ADMIN_PORT = 8009
+        b.WEB_ADMIN_PORT = 8008
     if len(sys.argv) > 2:
         b.money = int(sys.argv[2])
     else:
@@ -711,5 +711,4 @@ if __name__ == "__main__":
   
     while True:
         time.sleep(1)
-  
   
