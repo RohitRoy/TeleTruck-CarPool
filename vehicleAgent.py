@@ -7,10 +7,11 @@ import itertools as it
 import json
 import spade
 
+from st import *
+
 
 host = "127.0.0.1"
 
-N = 10 # number of intersections
 
 trad_graph = dict()
 
@@ -22,16 +23,30 @@ def agentID(agentName):
     return agentName+"@"+host
 
 
+def getMeshTour(tour):
+    meshtour = [ (G_to_g(pick), G_to_g(drop)) for pick, drop in tour]
+    return meshtour
+
+def getMeshPath(path):
+    meshpath = [ G_to_g(node) for node in path ]
+    return meshpath
+
 def initPosition():
     return np.random.randint(N)
 
 
-def getCost(order, agentName):
-    pickup, deliver = order
-    return np.random.random()
+# def getCost(order, agentName):
+#     pickup, deliver = order
+#     return np.random.random()
 
 
-def updatedTourPlan(path, tour, task):
+def updatedPath(path, tour, task):
+    pickup, deliver = task
+    tillpick = nx.shortest_path(g, path[-1], G_to_g(pickup))
+    tilldrop = nx.shortest_path(g, G_to_g(pickup), G_to_g(deliver))
+    path = path[:-1] + tillpick[:-1] + tilldrop
+    path = [g_to_G(point) for point in path]
+    tour.append(task)
     return path, tour
 
 
@@ -57,7 +72,9 @@ class PnEU(spade.Agent.Agent):
 
             # calculating cost
             jobid, task = json.loads(ordermsg.getContent())
-            cost = getCost(task, myAgent.getName())
+            meshtour = getMeshTour(myAgent.tour[:])
+            meshtask = (G_to_g(task[0]), G_to_g(task[1]))
+            cost = getcost(meshtask, myAgent, meshtour)
 
             # sending bid
             bidmsg = spade.ACLMessage.ACLMessage()
@@ -75,7 +92,7 @@ class PnEU(spade.Agent.Agent):
             msg = self._receive(block=True,timeout=10)
             isgrant, jobid, task = json.loads(msg.getContent())
             print "PnEU bid has been "+isgrant.lower()
-            if msg.isgrant() == "Granted":
+            if isgrant == "Granted":
                 self.getAgent().modifyTour(jobid, task)
                 # self.initiateTrade()
 
@@ -92,15 +109,13 @@ class PnEU(spade.Agent.Agent):
 
     class VehicleMotion(spade.Behaviour.PeriodicBehaviour):
 
-
         def _onTick(self):
             myAgent = self.getAgent()
             if myAgent.path and len(myAgent.path) > 1:
-                print "Here2"
                 i = myAgent.path.index(myAgent.location)
                 nextstop = myAgent.path[1]
                 self.traversed += self.speed
-                distance = distmatrix[myAgent.location][nextstop] - self.traversed
+                distance = G[myAgent.location][nextstop] - self.traversed
                 if distance < 0.0:
                     myAgent.path = myAgent.path[1:]
 
@@ -124,7 +139,7 @@ class PnEU(spade.Agent.Agent):
         def _process(self):
             msg = self._receive(block=True,timeout=10)
             myAgent = self.getAgent()
-            ST(self.aname, myAgent.tour, trad_graph)
+            ST(myAgent, myAgent.tour[:], trad_graph)
             print "Ran one round of trading"
             msg = spade.ACLMessage.ACLMessage()
             msg.setPerformative("inform")
@@ -135,8 +150,12 @@ class PnEU(spade.Agent.Agent):
 
 
     def modifyTour(self, jobid, task):
-        self.path, self.tour = updatedPath(self.path, self.tour, task)
+        self.path, self.tour = updatedPath(getMeshPath(self.path), self.tour, task)
+        print self.getName(), "New Path: ", self.path
+        print self.getName(), "New Tour: ", self.tour
+        print self.getName(), "Position: ", self.tour
         self.topick[task[0]] = (jobid, task[1])
+
 
     def _setup(self):
         self.addBehaviour(self.VehicleMotion(1), None)

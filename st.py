@@ -2,18 +2,39 @@ import random
 import numpy as np
 import networkx as nx
 
+
 def generateGraph(m,n):
 	g=nx.grid_2d_graph(m,n)
-	G=np.zeros((m*n,m*n))
+	G=np.zeros((m*n,m*n)) + np.inf
 	for i in g.edges():
 		G[i[0][0]*n+i[0][1]][i[1][0]*n+i[1][1]]=random.randint(1,10)
 		G[i[1][0]*n+i[1][1]][i[0][0]*n+i[0][1]]=G[i[0][0]*n+i[0][1]][i[1][0]*n+i[1][1]]
 	return (g,G)
 
-def cost(order,agentID,tourList):
-	pickup,delivery=order
-	t=list(tourList)
-	t.remove(order)
+
+m, n = 10, 10
+g, G = generateGraph(m, n)
+N = m*n # number of intersections
+
+
+def G_to_g(k):
+    return (k/n, k%n)
+
+def g_to_G(p):
+	global n
+	return p[0]*n + p[1]
+
+
+def getcost(order,agent,tourList):
+	speed = agent.speed
+	curr_start = agent.path[1] if len(agent.path) > 1 else agent.path[0]
+	curr_start = G_to_g(curr_start)
+	# pickup, delivery = order
+	t = list(tourList[:])
+	if order in t:
+		t.remove(order)
+	else:
+		t.append(order)
 	ls=curr_start
 	path=[]
 	for i in tourList:
@@ -26,12 +47,29 @@ def cost(order,agentID,tourList):
 		path.pop()
 		path=path+nx.shortest_path(g,p,d)
 		ls=d
-	c=0
-	for i in path:
-		c+=G[i[0]][i[1]]
-	return c/speed
+	c1=0
+	for i in range(len(path) - 1):
+		p1, p2 = g_to_G(path[i]), g_to_G(path[i+1])
+		c1 += G[p1][p2]
 
-
+	ls=curr_start
+	path=[]
+	for i in t:
+		p,d=i
+		try:
+			path.pop()
+		except IndexError:
+			pass
+		path=path+nx.shortest_path(g,ls,p)
+		path.pop()
+		path=path+nx.shortest_path(g,p,d)
+		ls=d
+	c2=0
+	for i in range(len(path) - 1):
+		p1, p2 = g_to_G(path[i]), g_to_G(path[i+1])
+		# print "here5c3", path[i+1]
+		c2 += G[p1][p2]
+	return abs(c2 - c1)/speed
 
 
 sellingList=[]
@@ -39,29 +77,29 @@ def ST(agentID, tourList, TG):
 	if random.random()<0.5: #Sell
 		total=0
 		for i in tourList:
-			total+=cost(i,agentID,tourList)
+			total+=getcost(i,agentID,tourList)
 		for i in range(len(tourList)):
-			p[i]=cost(tourList[i],agentID,tourList)/total
-			if cost(tourList[i],agentID,tourList)==0.0:
+			p[i]=getcost(tourList[i],agentID,tourList)/total
+			if getcost(tourList[i],agentID,tourList)==0.0:
 				p[i]=1.0/len(tourList)
 		i=np.random.choice(len(tourList),1,p)[0]
 		sellingList.append(tourList[i])
-		TG[agentID].append('S',tourList[i],cost(tourList[i],agentID,tourList)
+		TG[agentID].append('S',tourList[i],getcost(tourList[i],agentID,tourList))
 		tourList.remove(tourList[i])
 	else:
-		m=cost(sellingList[0],agentID,tourList)-cost(tourList[0],agentID,tourList) #Buy
+		m=getcost(sellingList[0],agentID,tourList)-getcost(tourList[0],agentID,tourList) #Buy
 		total=m
 		for k in range(1,len(sellingList)):
-			if cost(sellingList[k],agentID,tourList)-cost(tourList[k],agentID,tourList)<m:
-				m=cost(sellingList[k],agentID,tourList)-cost(tourList[k],agentID,tourList)
-			total+=cost(sellingList[k],agentID,tourList)-cost(tourList[k],agentID,tourList)
+			if getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)<m:
+				m=getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)
+			total+=getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)
 		for k in range(len(sellingList)):
-			p[k]=(cost(sellingList[k],agentID,tourList)-cost(tourList[k],agentID,tourList)-m)/(total-k*m)
+			p[k]=(getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)-m)/(total-k*m)
 			if p[k]==0.0:
 				p[k]=1/len(sellingList)
 		k=np.random.choice(len(sellingList),1,p)[0]
 		tourList.append(sellingList[k])
-		TG[agentID].append('B',sellingList[i],cost(sellingList[i],agentID,tourList))
+		TG[agentID].append('B',sellingList[i],getcost(sellingList[i],agentID,tourList))
 		sellingList.remove(sellingList[i])
 
 def findMaxMatch(i,l,k,g,Q):
@@ -74,7 +112,7 @@ def findMaxMatch(i,l,k,g,Q):
 		for j1 in range(l-1):
 			for j2 in agentIDs:
 				M[j2][j1]=1
-				findMaxMatch(i,j1,j2,g-cost(i,j2,tourList)+cost(i,k,tourList),Q)
+				findMaxMatch(i,j1,j2,g-getcost(i,j2,tourList)+getcost(i,k,tourList),Q)
 	else:
 		flag=0
 		for p in Q:

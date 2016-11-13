@@ -210,7 +210,7 @@ class Company(spade.Agent.Agent):
         self.bids = dict()
         self.trades = list()
         self.traderound = 0
-        self.addBehaviour(self.GenerateOrder(20))
+        self.addBehaviour(self.GenerateOrder(10))
         for b in company[1:]:
             template = spade.Behaviour.ACLTemplate()
             template.setSender(spade.AID.aid(agentID(b), ["xmpp://" + agentID(b)]))
@@ -236,6 +236,7 @@ print "Here"
 P = list()
 for b in company[1:]:
     P.append(PnEU(agentID(b), "secret", company))
+P[-1].speed = 2.0
 print "Made all Agents, ", len(P)
 
 for b in P:
