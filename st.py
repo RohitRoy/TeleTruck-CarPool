@@ -74,32 +74,49 @@ def getcost(order,agent,tourList):
 
 sellingList=[]
 def ST(agentID, tourList, TG):
-	if random.random()<0.5: #Sell
+	print "here"
+	if (len(sellingList) == 0 and len(tourList)):
+		return
+	if random.random()<0.5 or len(sellingList) == 0: #Sell
 		total=0
+		print "no1"
 		for i in tourList:
 			total+=getcost(i,agentID,tourList)
+		print "no2"
 		for i in range(len(tourList)):
 			p[i]=getcost(tourList[i],agentID,tourList)/total
 			if getcost(tourList[i],agentID,tourList)==0.0:
 				p[i]=1.0/len(tourList)
-		i=np.random.choice(len(tourList),1,p)[0]
+		print "no3"
+		print "noc", range(len(tourList))
+		print "nocd", np.random.choice( range(len(tourList)), 1, p)
+		i = np.random.choice(range(len(tourList)), 1, p)[0]
+		print "no4"
 		sellingList.append(tourList[i])
+		print "no5"
 		TG[agentID].append('S',tourList[i],getcost(tourList[i],agentID,tourList))
+		print "no6"
 		tourList.remove(tourList[i])
+		print "no7"
 	else:
+		print "to Buy"
 		m=getcost(sellingList[0],agentID,tourList)-getcost(tourList[0],agentID,tourList) #Buy
 		total=m
+		print "to1"
 		for k in range(1,len(sellingList)):
 			if getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)<m:
 				m=getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)
 			total+=getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)
+		print "to2"
 		for k in range(len(sellingList)):
 			p[k]=(getcost(sellingList[k],agentID,tourList)-getcost(tourList[k],agentID,tourList)-m)/(total-k*m)
 			if p[k]==0.0:
 				p[k]=1/len(sellingList)
+		print "to3"
 		k=np.random.choice(len(sellingList),1,p)[0]
 		tourList.append(sellingList[k])
 		TG[agentID].append('B',sellingList[i],getcost(sellingList[i],agentID,tourList))
+		print "to4"
 		sellingList.remove(sellingList[i])
 
 def findMaxMatch(i,l,k,g,Q):

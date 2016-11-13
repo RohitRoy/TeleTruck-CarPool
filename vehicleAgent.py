@@ -94,7 +94,7 @@ class PnEU(spade.Agent.Agent):
             print "PnEU bid has been "+isgrant.lower()
             if isgrant == "Granted":
                 self.getAgent().modifyTour(jobid, task)
-                # self.initiateTrade()
+                self.initiateTrade()
 
         def initiateTrade(self):
             myAgent = self.getAgent()
@@ -120,7 +120,6 @@ class PnEU(spade.Agent.Agent):
 
                 self.traversed += myAgent.speed
                 distance = G[myAgent.location][nextstop] - self.traversed
-                print myAgent.getName(), distance
                 if distance < 0.0:
                     myAgent.path = myAgent.path[1:]
                     myAgent.location = myAgent.path[0]
@@ -146,7 +145,8 @@ class PnEU(spade.Agent.Agent):
         def _process(self):
             msg = self._receive(block=True,timeout=10)
             myAgent = self.getAgent()
-            ST(myAgent, myAgent.tour[:], trad_graph)
+            print "hereST"
+            ST(myAgent, getMeshTour(myAgent.tour), trad_graph)
             print "Ran one round of trading"
             msg = spade.ACLMessage.ACLMessage()
             msg.setPerformative("inform")
@@ -158,9 +158,6 @@ class PnEU(spade.Agent.Agent):
 
     def modifyTour(self, jobid, task):
         self.path, self.tour = updatedPath(getMeshPath(self.path), self.tour, task)
-        print self.getName(), "New Path: ", self.path
-        print self.getName(), "New Tour: ", self.tour
-        print self.getName(), "Position: ", self.path[0], G[self.path[0]][self.path[1]]
         self.topick[task[0]].append((jobid, task[1]))
 
 

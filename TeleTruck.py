@@ -150,18 +150,25 @@ class Company(spade.Agent.Agent):
             if myAgent.traderound == 0:
                 for b in company[1:]:
                     trad_graph[b] = list()
-                for b in np.random.shuffle(company[1:]):
+                vehicles = company[1:]
+                np.random.shuffle(vehicles)
+                print vehicles
+                for b in vehicles:
+                    print b
+                    print agentID(b)
                     trademsg = self.generateMesg(agentID(b))
-                    myAgent.send(grantmsg)
+                    print agentID(b)
+                    myAgent.send(trademsg)
                 myAgent.traderound += 1
             else:
                 print "Already trading. Ignoring request."
 
-        def generateMsg(self, agentname):
+        def generateMesg(self, agentname):
+            print "here"
             trademsg = spade.ACLMessage.ACLMessage()
             trademsg.setPerformative("inform")
             trademsg.setOntology("TradeRound")
-            grantmsg.addReceiver(spade.AID.aid(agentname, ["xmpp://" + agentname]))
+            trademsg.addReceiver(spade.AID.aid(agentname, ["xmpp://" + agentname]))
             return trademsg
 
 
@@ -176,7 +183,7 @@ class Company(spade.Agent.Agent):
             print "Company has received a trading bid"
 
             if len(trades) == len(company)-1:
-                print "Company has received all bids"
+                print "Company has received all trades at current round"
                 if myAgent.traderound == 10:
                     print "Stopping Trade."
                     self.completeTrade()
