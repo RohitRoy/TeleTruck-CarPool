@@ -1,9 +1,18 @@
 import random
 import numpy as np
+import networkx as nx
 
+def generateGraph(m,n):
+	g=nx.grid_2d_graph(m,n)
+	G=np.zeros((m*n,m*n))
+	for i in g.edges():
+		print (i[0][0])*m+i[0][1],i[1][0]*m+i[1][1]
+		G[(i[0][0])*m+i[0][1]][i[1][0]*m+i[1][1]]=random.randint(1,10)
+	return (g,G)
 
-def cost(itemID, agentID):
-	pass
+def cost(order, agentID):
+	pickup,delivery=order
+
 
 sellingList=[]
 def ST(agentID, tourList, TG):
