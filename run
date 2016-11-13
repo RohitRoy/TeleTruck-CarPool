@@ -1,0 +1,6 @@
+default:
+	wget https://pypi.python.org/packages/e6/f6/a13e2de39a514997d53872ed494752957ba312cb3923247f7de8950855e4/SPADE-2.2.1.tar.gz#md5=446cda25e680e68b427fc98bf09000e3
+	tar -xvzf SPADE-2.2.1.tar.gz
+	sudo -H pip2 install spade
+	python ./SPADE*/configure.py localhost
+	python ./SPADE*/runspade.py &
