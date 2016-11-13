@@ -12,9 +12,11 @@ host = "127.0.0.1"
 
 N = 10 # number of intersections
 
-roadmap = np.zeros((N,N), dtype=float)
-for i, j in it.combinations(range(N), 2):
-    roadmap[i][j] = float(np.random.randint(2, 10))
+trad_graph = dict()
+
+# roadmap = np.zeros((N,N), dtype=float)
+# for i, j in it.combinations(range(N), 2):
+#     roadmap[i][j] = float(np.random.randint(2, 10))
 
 def agentID(agentName):
     return agentName+"@"+host
@@ -29,8 +31,8 @@ def getCost(order, agentName):
     return np.random.random()
 
 
-def updatedTourPlan(path, task):
-    return path
+def updatedTourPlan(path, tour, task):
+    return path, tour
 
 
 class PnEU(spade.Agent.Agent):
@@ -44,6 +46,7 @@ class PnEU(spade.Agent.Agent):
         self.topick = {i: list() for i in range(N)}
         self.location = initPosition()
         self.path = [self.location,]
+        self.tour = list()
   
     class BidForOrder(spade.Behaviour.Behaviour):
   
@@ -74,6 +77,17 @@ class PnEU(spade.Agent.Agent):
             print "PnEU bid has been "+isgrant.lower()
             if msg.isgrant() == "Granted":
                 self.getAgent().modifyTour(jobid, task)
+                # self.initiateTrade()
+
+        def initiateTrade(self):
+            myAgent = self.getAgent()
+            initmsg = spade.ACLMessage.ACLMessage()
+            initmsg.setPerformative("inform")
+            bossId = spade.AID.aid(myAgent.boss, ["xmpp://"+ myAgent.boss])
+            initmsg.addReceiver(bossId)
+            initmsg.setOntology("InitTrade")
+            myAgent.send(initmsg)
+            print "PnEU has initiated Trading."
 
 
     class VehicleMotion(spade.Behaviour.PeriodicBehaviour):
@@ -102,20 +116,26 @@ class PnEU(spade.Agent.Agent):
                         myAgent.picked[nextstop] = list()
 
 
-    # class SendMsgBehav(spade.Behaviour.OneShotBehaviour):
-  
-    #     def _process(self):
-    #         msg = spade.ACLMessage.ACLMessage()
-    #         msg.setPerformative("inform")
-    #         msg.addReceiver(spade.AID.aid("a@"+host,["xmpp://a@"+host]))
-    #         msg.setContent("testSendMsg")
-    #         msg.setOntology("Bid")
-    #         self.getAgent().send(msg)
-    #         print "PnEU has sent a message:"
-    #         # print str(msg)
+    class RunTradeRound(spade.Behaviour.Behaviour):
+
+        def onStart(self):
+            self.aname = self.getAgent().getName()
+        
+        def _process(self):
+            msg = self._receive(block=True,timeout=10)
+            myAgent = self.getAgent()
+            ST(self.aname, myAgent.tour, trad_graph)
+            print "Ran one round of trading"
+            msg = spade.ACLMessage.ACLMessage()
+            msg.setPerformative("inform")
+            msg.addReceiver(spade.AID.aid(myAgent.boss,["xmpp://"+myAgent.boss]))
+            msg.setOntology("Trade")
+            myAgent.send(msg)
+            print "PnEU has sent a trade message."
+
 
     def modifyTour(self, jobid, task):
-        self.path = updatedTourPlan(self.path, task)
+        self.path, self.tour = updatedPath(self.path, self.tour, task)
         self.topick[task[0]] = (jobid, task[1])
 
     def _setup(self):
@@ -131,4 +151,8 @@ class PnEU(spade.Agent.Agent):
         template.setOntology("Grant")
         t = spade.Behaviour.MessageTemplate(template)
         self.addBehaviour(self.ReceiveGrant(), t)
+
+        template.setOntology("TradeRound")
+        t = spade.Behaviour.MessageTemplate(template)
+        self.addBehaviour(self.RunTradeRound(), t)
         print "PnEU started!"

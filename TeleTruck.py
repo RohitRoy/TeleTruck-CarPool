@@ -16,6 +16,7 @@ A = 3 # number of agents
 
 company = [str(a) for a in range(A+1)]
 
+M = None
 
 class Company(spade.Agent.Agent):
     """
@@ -74,6 +75,7 @@ class Company(spade.Agent.Agent):
             self.getAgent().send(msg)
             print "Company has sent a message:"
             # print str(msg)
+
 
     class ReceiveBid(spade.Behaviour.Behaviour):
         """
@@ -138,8 +140,76 @@ class Company(spade.Agent.Agent):
             return msg
 
 
+    class InitiateTrade(spade.Behaviour.Behaviour):
+        
+        def _process(self):
+            # receive new bid and update bids for this order
+            msg = self._receive(block=True, timeout=15)
+            print "Company has received request to trade"
+            myAgent = self.getAgent()
+            if myAgent.traderound == 0:
+                for b in company[1:]:
+                    trad_graph[b] = list()
+                for b in np.random.shuffle(company[1:]):
+                    trademsg = self.generateMesg(agentID(b))
+                    myAgent.send(grantmsg)
+                myAgent.traderound += 1
+            else:
+                print "Already trading. Ignoring request."
+
+        def generateMsg(self, agentname):
+            trademsg = spade.ACLMessage.ACLMessage()
+            trademsg.setPerformative("inform")
+            trademsg.setOntology("TradeRound")
+            grantmsg.addReceiver(spade.AID.aid(agentname, ["xmpp://" + agentname]))
+            return trademsg
+
+
+    class PropagateTrade(spade.Behaviour.Behaviour):
+  
+        def _process(self):
+            # receive new bid
+            msg = self._receive(block=True, timeout=15)
+            trades = self.getAgent().trades
+            sender = msg.getSender().getName()
+            trades.append(sender)
+            print "Company has received a trading bid"
+
+            if len(trades) == len(company)-1:
+                print "Company has received all bids"
+                if myAgent.traderound == 10:
+                    print "Stopping Trade."
+                    self.completeTrade()
+                    print "Stopped Trading."
+                else:
+                    for b in company[1:]:
+                        trad_graph[b] = list()
+                    for b in np.random.shuffle(company[1:]):
+                        trademsg = self.generateMesg(agentID(b))
+                        myAgent.send(grantmsg)
+                    myAgent.traderound += 1 # already started the i_th round
+
+        def completeTrade(self):
+            myAgent = self.getAgent()
+            TG = myAgent.trad_graph
+            M = np.zeros((len(company)-1, 10))
+            for b in company[1:]:
+                item = TG[0]
+                #findMaxMatch()
+
+
+        def generateMsg(self, agentname):
+            trademsg = spade.ACLMessage.ACLMessage()
+            trademsg.setPerformative("inform")
+            trademsg.setOntology("TradeRound")
+            grantmsg.addReceiver(spade.AID.aid(agentname, ["xmpp://" + agentname]))
+            return trademsg
+
+
     def _setup(self):
         self.bids = dict()
+        self.trades = list()
+        self.traderound = 0
         self.addBehaviour(self.GenerateOrder(20))
         for b in company[1:]:
             template = spade.Behaviour.ACLTemplate()
@@ -147,6 +217,15 @@ class Company(spade.Agent.Agent):
             template.setOntology("Bid")
             t = spade.Behaviour.MessageTemplate(template)
             self.addBehaviour(self.ReceiveBid(), t)
+
+            template.setOntology("InitTrade")
+            t = spade.Behaviour.MessageTemplate(template)
+            self.addBehaviour(self.InitiateTrade(), t)
+
+            template.setOntology("Trade")
+            t = spade.Behaviour.MessageTemplate(template)
+            self.addBehaviour(self.PropagateTrade(), t)
+
         print "Company started!"
 
 
