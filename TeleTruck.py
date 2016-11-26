@@ -17,7 +17,6 @@ A = 3 # number of agents
 company = [str(a) for a in range(A+1)]
 
 M = None
-L = 3
 
 class Company(spade.Agent.Agent):
     """
@@ -199,14 +198,67 @@ class Company(spade.Agent.Agent):
         def completeTrade(self):
             myAgent = self.getAgent()
             M = np.zeros((len(company)-1, L))
-            first_level = [trad_graph[agent][0] for agent in trad_graph]
-            for agent in trad_graph:
+            items = [trad_graph[agent][l] for agent in trad_graph for l in trad_graph[agent]]
+            items = list(set(items))
+            neighbours = {node: list() for node in it.product(range(len(company)-1)), range(len(L))}
+            for node in neighbours:
+                thenode = trad_graph[P[node[0]]][node[1]]
+                if thenode[0] == 'S':
+                    item = thenode[1]
+                    for i in range(len(P)):
+                        agent = P[i]
+                        for l in range(node[1]+1, L):
+                            if trad_graph[P[i]][l][0] == 'B' \
+                              and trad_graph[P[i]][l][1] == node[1]:
+                                neighbours[node].append((i,l))
+            for agent in P:
                 item = trad_graph[agent][0]
                 print "comehere +"+str(item)
                 findMaxMatch(item, L, agent, 0, list())
-                #findMaxMatch()
-            print "Success!"
             print M
+            sells = list()
+            buys = list()
+            for l in range(L):
+                if np.any(M[:,0] == 1):
+                    for n in range(len(M[:,0])):
+                        if M[n,0] == 0: continue
+                        node = trad_graph[P[n]][l]
+                        if node[0] == 'S':
+                            sells.append((n, node[1]))
+                        else:
+                            buys.append((n, node[1]))
+                else:
+                    print "Unsuccessful"
+                    break
+            else:
+                print "Success!"
+                matches = list()
+                for sell in sells:
+                    for buy in buys[:]:
+                        if sell[1] == buy[1]:
+                            matches.append((sell[0], buy[0], sell[1]))
+                            buys.remove(buy)
+                            break
+                    else:
+                        print "Something's wrong?"
+                for match in matches:
+                    sellername = agentID(company[1+match[0]])
+                    soldmsg = spade.ACLMessage.ACLMessage()
+                    soldmsg.setPerformative("inform")
+                    soldmsg.setOntology("TradeEnd")
+                    soldmsg.setContent(json.dumps( ("Sold", match[2]) ))
+                    soldmsg.addReceiver(spade.AID.aid(sellername, ["xmpp://" + sellername]))
+                    myAgent.send(soldmsg)
+
+                    buyername = agentID(company[1+match[1]])
+                    boughtmsg = spade.ACLMessage.ACLMessage()
+                    boughtmsg.setPerformative("inform")
+                    boughtmsg.setOntology("TradeEnd")
+                    boughtmsg.setContent(json.dumps( ("Bought", match[2]) )
+                    boughtmsg.addReceiver(spade.AID.aid(buyername, ["xmpp://" + buyername]))
+                    myAgent.send(boughtmsg)
+                return
+
             sellingList = list()
             myAgent.traderound = 0
 
@@ -253,17 +305,17 @@ print "Made all Agents, ", len(P)
 
 for b in P:
     b.start();
-    b.roster.acceptAllSubscriptions();
-    time.sleep(1)
+    # b.roster.acceptAllSubscriptions();
+    # time.sleep(1)
 a.start()
-a.roster.acceptAllSubscriptions();
-a.roster.followbackAllSubscriptions();
+# a.roster.acceptAllSubscriptions();
+# a.roster.followbackAllSubscriptions();
 
-print "Ready to Accept \n"
+# print "Ready to Accept \n"
 
-for b in P:
-    b.roster.subscribe(company[0]+"@"+host);
-print "Subscribed! \n"
+# for b in P:
+#     b.roster.subscribe(company[0]+"@"+host);
+# print "Subscribed! \n"
 
 a.wui.start();
 for b in P:

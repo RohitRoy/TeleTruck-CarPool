@@ -155,6 +155,17 @@ class PnEU(spade.Agent.Agent):
             myAgent.send(msg)
             print "PnEU has sent a trade message."
 
+    class ReceiveTrades(spade.Behaviour.Behaviour):
+
+        def _process(self):
+            msg = self._receive(block=True,timeout=10)
+            isgrant, task = json.loads(msg.getContent())
+            print "PnEU has "+isgrant.lower()+" task:\t"+str(task)
+            if isgrant == "TradeSold":
+                self.getAgent().removeFromTour(jobid, task)
+            if isgrant == "TradeBought":
+                self.getAgent().modifyTour(jobid, task)
+
 
     def modifyTour(self, jobid, task):
         self.path, self.tour = updatedPath(getMeshPath(self.path), self.tour, task)
