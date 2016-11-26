@@ -17,6 +17,7 @@ A = 3 # number of agents
 company = [str(a) for a in range(A+1)]
 
 M = None
+L = 3
 
 class Company(spade.Agent.Agent):
     """
@@ -179,7 +180,7 @@ class Company(spade.Agent.Agent):
             if len(trades) == len(company)-1:
                 myAgent.trades = list()
                 print "Company has received all trades at current round"
-                if myAgent.traderound == 3:
+                if myAgent.traderound == L:
                     print "Stopping Trade."
                     self.completeTrade()
                     print "Stopped Trading."
@@ -197,12 +198,12 @@ class Company(spade.Agent.Agent):
 
         def completeTrade(self):
             myAgent = self.getAgent()
-            M = np.zeros((len(company)-1, 3))
+            M = np.zeros((len(company)-1, L))
             first_level = [trad_graph[agent][0] for agent in trad_graph]
             for agent in trad_graph:
                 item = trad_graph[agent][0]
                 print "comehere +"+str(item)
-                findMaxMatch(item, 0, agent, 0, list())
+                findMaxMatch(item, L, agent, 0, list())
                 #findMaxMatch()
             print "Success!"
             print M
