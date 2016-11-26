@@ -13,10 +13,8 @@ import spade
 from vehicleAgent import *
 
 A = 3 # number of agents
-
+L = 3
 company = [str(a) for a in range(A+1)]
-
-M = None
 
 class Company(spade.Agent.Agent):
     """
@@ -47,6 +45,11 @@ class Company(spade.Agent.Agent):
             if pickup == deliver:
                 deliver = (deliver+1)%N
             task = (pickup, deliver)
+
+            # global G
+            # print G
+            # Jams[np.random.randint(G.size)][np.random.randint(G.size)]  /= (np.random.random(1,))
+            # G *= Jams
 
             # formulating message to delcare new order
             msg = spade.ACLMessage.ACLMessage()
@@ -166,7 +169,7 @@ class Company(spade.Agent.Agent):
 
 
     class PropagateTrade(spade.Behaviour.Behaviour):
-  
+
         def _process(self):
             # receive new bid
             myAgent = self.getAgent()
@@ -187,9 +190,7 @@ class Company(spade.Agent.Agent):
                         trad_graph[b] = list()
                 else:
                     vehicles = company[1:]
-                    print "somehow here"
                     np.random.shuffle(vehicles)
-                    print "here+"+str(len(vehicles))
                     for b in vehicles:
                         trademsg = self.generateMesg(agentID(b))
                         myAgent.send(trademsg)
@@ -197,10 +198,11 @@ class Company(spade.Agent.Agent):
 
         def completeTrade(self):
             myAgent = self.getAgent()
-            M = np.zeros((len(company)-1, L))
-            items = [trad_graph[agent][l] for agent in trad_graph for l in trad_graph[agent]]
-            items = list(set(items))
-            neighbours = {node: list() for node in it.product(range(len(company)-1)), range(len(L))}
+            myAgent.traderound = 0
+            global Matchr
+            Matchr = np.zeros((len(company)-1, L))
+            M_star = np.zeros((len(company)-1, L))
+            neighbours = {node: list() for node in it.product(range(len(company)-1), range(L))}
             for node in neighbours:
                 thenode = trad_graph[P[node[0]]][node[1]]
                 if thenode[0] == 'S':
@@ -211,17 +213,15 @@ class Company(spade.Agent.Agent):
                             if trad_graph[P[i]][l][0] == 'B' \
                               and trad_graph[P[i]][l][1] == node[1]:
                                 neighbours[node].append((i,l))
-            for agent in P:
+            for a, agent in enumerate(P):
                 item = trad_graph[agent][0]
-                print "comehere +"+str(item)
-                findMaxMatch(item, L, agent, 0, list())
-            print M
+                findMaxMatch(a, 0, item, 0, list(), Matchr, neighbours, M_star)
             sells = list()
             buys = list()
             for l in range(L):
-                if np.any(M[:,0] == 1):
-                    for n in range(len(M[:,0])):
-                        if M[n,0] == 0: continue
+                if np.any(M_star[:,0] == 1):
+                    for n in range(len(M_star[:,0])):
+                        if M_star[n,0] == 0: continue
                         node = trad_graph[P[n]][l]
                         if node[0] == 'S':
                             sells.append((n, node[1]))
@@ -240,7 +240,7 @@ class Company(spade.Agent.Agent):
                             buys.remove(buy)
                             break
                     else:
-                        print "Something's wrong?"
+                        print "Unsuccessful"
                 for match in matches:
                     sellername = agentID(company[1+match[0]])
                     soldmsg = spade.ACLMessage.ACLMessage()
@@ -254,13 +254,10 @@ class Company(spade.Agent.Agent):
                     boughtmsg = spade.ACLMessage.ACLMessage()
                     boughtmsg.setPerformative("inform")
                     boughtmsg.setOntology("TradeEnd")
-                    boughtmsg.setContent(json.dumps( ("Bought", match[2]) )
+                    boughtmsg.setContent(json.dumps( ("Bought", match[2]) ))
                     boughtmsg.addReceiver(spade.AID.aid(buyername, ["xmpp://" + buyername]))
                     myAgent.send(boughtmsg)
                 return
-
-            sellingList = list()
-            myAgent.traderound = 0
 
         def generateMesg(self, agentname):
             trademsg = spade.ACLMessage.ACLMessage()
@@ -300,7 +297,7 @@ print "Here"
 P = list()
 for b in company[1:]:
     P.append(PnEU(agentID(b), "secret", company))
-P[-1].speed = 2.0
+# P[-1].speed = 2.0
 print "Made all Agents, ", len(P)
 
 for b in P:

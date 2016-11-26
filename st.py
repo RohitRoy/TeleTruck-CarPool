@@ -6,6 +6,8 @@ P = None
 trad_graph = None
 L = None
 neighbours = None
+Matchr = np.array([])
+M_star = None
 
 def generateGraph(m,n):
 	g=nx.grid_2d_graph(m,n)
@@ -71,13 +73,11 @@ def getcost(order,agent,tourList):
 	c2=0
 	for i in range(len(path) - 1):
 		p1, p2 = g_to_G(path[i]), g_to_G(path[i+1])
-		# print "here5c3", path[i+1]
 		c2 += G[p1][p2]
 	return abs(c2 - c1)/speed
 
 
-sellingList=[]
-def ST(agentID, tourList, TG):
+def ST(agentID, tourList, TG, sellingList):
 	if (len(sellingList) == 0 and len(tourList) == 0):
 		return False
 	p = [None]*len(tourList)
@@ -94,11 +94,8 @@ def ST(agentID, tourList, TG):
 		i = np.random.choice(range(len(tourList)), 1, p)[0]
 		sellingList.append(tourList[i])
 		somecost = getcost(tourList[i],agentID, tourList)
-		# print "no5"+str(somecost)
 		TG[agentID].append(('S', tourList[i], somecost))
-		# print "no6"
 		tourList.remove(tourList[i])
-		# print "no7"
 		return True
 	elif (len(sellingList) != 0):
 		print "to Buy"+"\t"+str(agentID.getName())
@@ -112,7 +109,6 @@ def ST(agentID, tourList, TG):
 				if getcost(sellingList[k],agentID,tourList) - tourcostnow < m:
 					m = getcost(sellingList[k],agentID,tourList) - tourcostnow
 				total += getcost(sellingList[k],agentID,tourList) - tourcostnow
-			# print "to2"
 			denominator = total - (len(sellingList))*m
 			if denominator == 0.0:
 				p = [1.0 / len(sellingList)] * len(sellingList)
@@ -121,41 +117,37 @@ def ST(agentID, tourList, TG):
 					p[k] = (getcost(sellingList[k],agentID,tourList) - tourcostnow - m) / denominator
 				if np.any(np.array(p) == 0.0):
 					p = [1.0 / len(sellingList)] * len(sellingList)
-			# print "to3"
 		k = np.random.choice(len(sellingList),1,p)[0]
 		tourList.append(sellingList[k])
-		# print "toc"+str(k)+"\t"+str(TG.has_key(agentID))
 		TG[agentID].append( ('B', sellingList[k], getcost(sellingList[k],agentID,tourList)) )
-		# print "toc"+str(k)+"\t"+agentID.getName()
-		# print "to4"
-		# sellingList.remove(sellingList[k])
 		return True
 	return False
 
 
-def findMaxMatch(i,l,k,g,Q):
+def findMaxMatch(i,l,k,g,Q, Matchr, neighbours, M_star):
 	for j1 in range(l-1):
-		if M[i][j1]==0:
-				Q.append((i,j1,trad_graph[P[i]][j1][1]))
-	if M[i][l]==0:
-		M[i][l]=1
+		if Matchr[i][j1]==0:
+			Q.append((i,j1,trad_graph[P[i]][j1][1]))
+	if Matchr[i][l]==0:
+		Matchr[i][l]=1
 		for n in neighbours[(i,l)]:
-			M[n[0]][n[1]]=1
-			findMaxMatch(n[0],n[1],trad_graph[P[n[0]]][n[1]][1],g-trad_graph[P[i]][l][2]+trad_graph[P[n[0]]][n[1]][2],Q)
+			Matchr[n[0]][n[1]]=1
+			findMaxMatch(n[0],n[1],trad_graph[P[n[0]]][n[1]][1],g-trad_graph[P[i]][l][2]+trad_graph[P[n[0]]][n[1]][2],Q, Matchr, neighbours, M_star)
 	else:
 		flag=0
 		for n in neighbours[(i,l)]:
-			if M[n[0]][n[1]]==0 and (n[0],n[1],trad_graph[P[n[0]]][n[1]][1]) in Q:
+			if Matchr[n[0]][n[1]]==0 and (n[0],n[1],trad_graph[P[n[0]]][n[1]][1]) in Q:
 				flag=1
 				Q.remove(p)
-				findMaxMatch(n[0],n[1],trad_graph[P[n[0]]][n[1]][1],g,Q)
+				findMaxMatch(n[0],n[1],trad_graph[P[n[0]]][n[1]][1],g,Q, Matchr, neighbours, M_star)
 				Q.append(p)
 		if flag==0:
 			if g>g_star:
 				g_star=g
-				M_star=M[:]
+				M_star *=  0.
+				M_star += Matchr[:]
 			for i1 in range(len(P)):
 				for j1 in range(len(L)):
-					if M[i1][j1]==0:
-						findMaxMatch(i1,j1,trad_graph[P[i1]][j1][1],g,Q)
-	M[i][l]=0
+					if Matchr[i1][j1]==0:
+						findMaxMatch(i1,j1,trad_graph[P[i1]][j1][1],g,Q, Matchr, neighbours, M_star)
+	Matchr[i][l]=0

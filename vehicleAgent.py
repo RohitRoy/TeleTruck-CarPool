@@ -14,6 +14,7 @@ host = "127.0.0.1"
 
 
 trad_graph = dict()
+sellingList = list()
 
 # roadmap = np.zeros((N,N), dtype=float)
 # for i, j in it.combinations(range(N), 2):
@@ -120,7 +121,7 @@ class PnEU(spade.Agent.Agent):
 
                 self.traversed += myAgent.speed
                 distance = G[myAgent.location][nextstop] - self.traversed
-                if distance < 0.0:
+                if distance <= 0.0:
                     myAgent.path = myAgent.path[1:]
                     myAgent.location = myAgent.path[0]
                     self.traversed = 0.0
@@ -145,7 +146,7 @@ class PnEU(spade.Agent.Agent):
         def _process(self):
             msg = self._receive(block=True, timeout=10)
             myAgent = self.getAgent()
-            while ST(myAgent, getMeshTour(myAgent.tour), trad_graph) != True:
+            while ST(myAgent, getMeshTour(myAgent.tour), trad_graph, sellingList) != True:
                 continue
             print "Ran one round of trading"
             msg = spade.ACLMessage.ACLMessage()
@@ -162,7 +163,7 @@ class PnEU(spade.Agent.Agent):
             isgrant, task = json.loads(msg.getContent())
             print "PnEU has "+isgrant.lower()+" task:\t"+str(task)
             if isgrant == "TradeSold":
-                self.getAgent().removeFromTour(jobid, task)
+                self.getAgent().removeFromTour(task)
             if isgrant == "TradeBought":
                 self.getAgent().modifyTour(jobid, task)
 
