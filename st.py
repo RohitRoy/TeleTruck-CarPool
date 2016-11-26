@@ -3,6 +3,9 @@ import numpy as np
 import networkx as nx
 
 P = None
+trad_graph = None
+L = None
+neighbours = None
 
 def generateGraph(m,n):
 	g=nx.grid_2d_graph(m,n)
@@ -78,7 +81,8 @@ def ST(agentID, tourList, TG):
 	if (len(sellingList) == 0 and len(tourList) == 0):
 		return False
 	p = [None]*len(tourList)
-	if random.random()<0.5 and len(tourList) != 0: #Sell
+	level=len(TG[agentID])
+	if (random.random()<0.5 and len(tourList) != 0) or (level==0 and len(tourList)!=0): #Sell
 		total = 0.0
 		print "to Sell"+"\t"+str(agentID.getName())
 		for i in tourList:
@@ -128,32 +132,30 @@ def ST(agentID, tourList, TG):
 		return True
 	return False
 
+
 def findMaxMatch(i,l,k,g,Q):
 	for j1 in range(l-1):
-		for j2 in P:
-			if M[j2][j1]==0:
-				Q.append((i,l,k))
-	if M[k][l]==0:
-		M[k][l]=1
-		for j1 in range(l-1):
-			for j2 in P:
-				M[j2][j1]=1
-				findMaxMatch(i,j1,j2,g-getcost(i,j2,tourList)+getcost(i,k,tourList),Q)
+		if M[i][j1]==0:
+				Q.append((i,j1,trad_graph[P[i]][j1][1]))
+	if M[i][l]==0:
+		M[i][l]=1
+		for n in neighbours[(i,l)]:
+			M[n[0]][n[1]]=1
+			findMaxMatch(n[0],n[1],trad_graph[P[n[0]]][n[1]][1],g-trad_graph[P[i]][l][2]+trad_graph[P[n[0]]][n[1]][2],Q)
 	else:
 		flag=0
-		for p in Q:
-			if M[p[2]][p[1]]==0:
+		for n in neighbours[(i,l)]:
+			if M[n[0]][n[1]]==0 and (n[0],n[1],trad_graph[P[n[0]]][n[1]][1]) in Q:
 				flag=1
 				Q.remove(p)
-				findMaxMatch(p[0],p[1],p[2],g,Q)
+				findMaxMatch(n[0],n[1],trad_graph[P[n[0]]][n[1]][1],g,Q)
 				Q.append(p)
 		if flag==0:
-			if g>g_max:
-				g_max=g
-				M_max=M
-			for h in range(L):
-				for r in agentIDs:
-					if M[r][h]==0:
-						if h==1 or M[r][h-1]==1:
-							findMaxMatch(i,h,r,g,Q)
-	M[k][l]=0
+			if g>g_star:
+				g_star=g
+				M_star=M[:]
+			for i1 in range(len(P)):
+				for j1 in range(len(L)):
+					if M[i1][j1]==0:
+						findMaxMatch(i1,j1,trad_graph[P[i1]][j1][1],g,Q)
+	M[i][l]=0
