@@ -143,10 +143,10 @@ class PnEU(spade.Agent.Agent):
             self.aname = self.getAgent().getName()
         
         def _process(self):
-            msg = self._receive(block=True,timeout=10)
+            msg = self._receive(block=True, timeout=10)
             myAgent = self.getAgent()
-            print "hereST"
-            ST(myAgent, getMeshTour(myAgent.tour), trad_graph)
+            while ST(myAgent, getMeshTour(myAgent.tour), trad_graph) != True:
+                continue
             print "Ran one round of trading"
             msg = spade.ACLMessage.ACLMessage()
             msg.setPerformative("inform")

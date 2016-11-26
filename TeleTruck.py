@@ -93,7 +93,6 @@ class Company(spade.Agent.Agent):
             if not bids.has_key(jobid):
                 bids[jobid] = dict()
             bids[jobid][sender] = bid # bid is the bidding price of sender
-            print "Company has received a bid"
 
             if len(bids[jobid].keys()) == len(company)-1:
                 print "Company has received all bids"
@@ -102,8 +101,6 @@ class Company(spade.Agent.Agent):
                 minbidder = None
                 minbid = np.inf
                 for bidder, bid in self.getAgent().bids[jobid].iteritems():
-                    print "Bidder: ", bidder
-                    print "Bid: ", bid
                     if bid < minbid:
                         minbid = bid
                         minbidder = bidder
@@ -148,23 +145,19 @@ class Company(spade.Agent.Agent):
             print "Company has received request to trade"
             myAgent = self.getAgent()
             if myAgent.traderound == 0:
-                for b in company[1:]:
+                for b in P:
                     trad_graph[b] = list()
+                sellingList = list()
                 vehicles = company[1:]
                 np.random.shuffle(vehicles)
-                print vehicles
                 for b in vehicles:
-                    print b
-                    print agentID(b)
                     trademsg = self.generateMesg(agentID(b))
-                    print agentID(b)
                     myAgent.send(trademsg)
                 myAgent.traderound += 1
             else:
                 print "Already trading. Ignoring request."
 
         def generateMesg(self, agentname):
-            print "here"
             trademsg = spade.ACLMessage.ACLMessage()
             trademsg.setPerformative("inform")
             trademsg.setOntology("TradeRound")
@@ -176,6 +169,7 @@ class Company(spade.Agent.Agent):
   
         def _process(self):
             # receive new bid
+            myAgent = self.getAgent()
             msg = self._receive(block=True, timeout=15)
             trades = self.getAgent().trades
             sender = msg.getSender().getName()
@@ -183,33 +177,40 @@ class Company(spade.Agent.Agent):
             print "Company has received a trading bid"
 
             if len(trades) == len(company)-1:
+                myAgent.trades = list()
                 print "Company has received all trades at current round"
                 if myAgent.traderound == 10:
                     print "Stopping Trade."
                     self.completeTrade()
                     print "Stopped Trading."
-                else:
-                    for b in company[1:]:
+                    for b in P:
                         trad_graph[b] = list()
-                    for b in np.random.shuffle(company[1:]):
+                else:
+                    vehicles = company[1:]
+                    print "somehow here"
+                    np.random.shuffle(vehicles)
+                    print "here+"+str(len(vehicles))
+                    for b in vehicles:
                         trademsg = self.generateMesg(agentID(b))
-                        myAgent.send(grantmsg)
+                        myAgent.send(trademsg)
                     myAgent.traderound += 1 # already started the i_th round
 
         def completeTrade(self):
             myAgent = self.getAgent()
             TG = myAgent.trad_graph
             M = np.zeros((len(company)-1, 10))
-            for b in company[1:]:
-                item = TG[0]
+            for b in P:
+                pass
+                # item = TG[0]
                 #findMaxMatch()
+            sellingList = list()
+            myAgent.traderound = 0
 
-
-        def generateMsg(self, agentname):
+        def generateMesg(self, agentname):
             trademsg = spade.ACLMessage.ACLMessage()
             trademsg.setPerformative("inform")
             trademsg.setOntology("TradeRound")
-            grantmsg.addReceiver(spade.AID.aid(agentname, ["xmpp://" + agentname]))
+            trademsg.addReceiver(spade.AID.aid(agentname, ["xmpp://" + agentname]))
             return trademsg
 
 
@@ -217,7 +218,7 @@ class Company(spade.Agent.Agent):
         self.bids = dict()
         self.trades = list()
         self.traderound = 0
-        self.addBehaviour(self.GenerateOrder(10))
+        self.addBehaviour(self.GenerateOrder(20))
         for b in company[1:]:
             template = spade.Behaviour.ACLTemplate()
             template.setSender(spade.AID.aid(agentID(b), ["xmpp://" + agentID(b)]))
