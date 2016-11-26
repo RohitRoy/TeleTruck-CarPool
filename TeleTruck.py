@@ -199,9 +199,10 @@ class Company(spade.Agent.Agent):
             myAgent = self.getAgent()
             M = np.zeros((len(company)-1, 3))
             first_level = [trad_graph[agent][0] for agent in trad_graph]
-            for node in first_level:
-                print "node "+str(node)
-                findMaxMatch(node[0], node[1], node[2], 0, list())
+            for agent in trad_graph:
+                item = trad_graph[agent][0]
+                print "comehere +"+str(item)
+                findMaxMatch(item, 0, agent, 0, list())
                 #findMaxMatch()
             print "Success!"
             print M

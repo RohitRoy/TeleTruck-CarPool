@@ -2,6 +2,7 @@ import random
 import numpy as np
 import networkx as nx
 
+P = None
 
 def generateGraph(m,n):
 	g=nx.grid_2d_graph(m,n)
@@ -129,13 +130,13 @@ def ST(agentID, tourList, TG):
 
 def findMaxMatch(i,l,k,g,Q):
 	for j1 in range(l-1):
-		for j2 in agentIDs:
+		for j2 in P:
 			if M[j2][j1]==0:
 				Q.append((i,l,k))
 	if M[k][l]==0:
 		M[k][l]=1
 		for j1 in range(l-1):
-			for j2 in agentIDs:
+			for j2 in P:
 				M[j2][j1]=1
 				findMaxMatch(i,j1,j2,g-getcost(i,j2,tourList)+getcost(i,k,tourList),Q)
 	else:
